@@ -1,0 +1,48 @@
+{
+  "name": "pebble-calendar",
+  "author": "alex_pavlov",
+  "version": "1.0.0",
+  "keywords": ["pebble-app"],
+  "private": true,
+  "dependencies": {},
+  "pebble": {
+    "displayName": "Calendar",
+    "uuid": "8e339b22-0ca4-4ec9-a332-8a42da9c49ef",
+    "sdkVersion": "3",
+    "enableMultiJS": true,
+    "targetPlatforms": [
+      "emery",
+      "gabbro"
+    ],
+    "watchapp": {
+      "watchface": false
+    },
+    "capabilities": [
+      "configurable"
+    ],
+    "messageKeys": [
+      "MsgType",
+      "Year",
+      "Month",
+      "Day",
+      "DayCounts",
+      "DayEvents",
+      "ErrMsg",
+      "WeekStart",
+      "SyncCount",
+      "SyncNext",
+      "Dir",
+      "AccentColor"
+    ],
+    "resources": {
+      "media": [
+        {
+          "type": "png",
+          "name": "IMAGE_MENU_ICON",
+          "file": "images/menu_icon.png",
+          "menuIcon": true
+        }
+      ]
+    }
+  }
+}
