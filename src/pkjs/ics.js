@@ -53,6 +53,13 @@ function parseContentLine(line) {
   return { name: name, params: params, value: value };
 }
 
+// RFC 5545 TEXT unescaping: \n / \N -> newline, \, \; \\ -> literal.
+function unescapeText(v) {
+  return v.replace(/\\([nN,;\\])/g, function (m, c) {
+    return (c === 'n' || c === 'N') ? '\n' : c;
+  });
+}
+
 // --- date parsing ----------------------------------------------------------
 
 // Parse an iCal date/date-time value into raw parts (no timezone applied yet).
@@ -165,6 +172,7 @@ function parseICS(text) {
   var tzid = null;    // current VTIMEZONE id
   var subs = null;    // current VTIMEZONE subcomponents
   var sub = null;     // current STANDARD/DAYLIGHT
+  var calName = '';   // X-WR-CALNAME, if the feed has one
 
   for (var i = 0; i < lines.length; i++) {
     var cl = parseContentLine(lines[i]);
@@ -172,7 +180,8 @@ function parseICS(text) {
     var n = cl.name, v = cl.value;
 
     if (n === 'BEGIN') {
-      if (v === 'VEVENT') cur = { uid: '', summary: '', allDay: false, rrule: null,
+      if (v === 'VEVENT') cur = { uid: '', summary: '', description: '', location: '',
+                                  allDay: false, rrule: null,
                                   startRaw: null, startTz: null, endRaw: null, endTz: null, exRaw: [] };
       else if (v === 'VTIMEZONE') { tzid = null; subs = []; }
       else if ((v === 'STANDARD' || v === 'DAYLIGHT') && subs) sub = { offsetTo: 0, start: null, rule: null };
@@ -192,11 +201,16 @@ function parseICS(text) {
       continue;
     }
     if (subs !== null && n === 'TZID') { tzid = v; continue; }   // VTIMEZONE id line
-    if (!cur) continue;
+    if (!cur) {
+      if (n === 'X-WR-CALNAME') calName = unescapeText(v);       // feed's display name
+      continue;
+    }
 
     switch (n) {
       case 'UID':     cur.uid = v; break;
-      case 'SUMMARY': cur.summary = v.replace(/\\,/g, ',').replace(/\\n/gi, ' '); break;
+      case 'SUMMARY': cur.summary = unescapeText(v).replace(/\n/g, ' '); break;
+      case 'DESCRIPTION': cur.description = unescapeText(v); break;
+      case 'LOCATION': cur.location = unescapeText(v).replace(/\n/g, ', '); break;
       case 'DTSTART':
         cur.startRaw = parseDateParts(v, cl.params);
         cur.startTz = cl.params.TZID;
@@ -222,6 +236,7 @@ function parseICS(text) {
   for (var e = 0; e < events.length; e++) {
     var ev = events[e];
     ev.title = ev.summary;
+    ev.calendar = calName;
     ev.start = resolveDate(ev.startRaw, ev.startTz, tzmap);
     ev.end = ev.endRaw ? resolveDate(ev.endRaw, ev.endTz, tzmap)
                        : new Date(ev.start.getTime() + (ev.allDay ? 86400000 : 0));
@@ -275,6 +290,10 @@ function pushInstance(out, ev, occStart) {
   out.push({
     uid: ev.uid,
     title: ev.title,
+    description: ev.description || '',
+    location: ev.location || '',
+    calendar: ev.calendar || '',
+    recurring: !!(ev.rrule && ev.rrule.freq),
     start: occStart,
     end: new Date(occStart.getTime() + dur),
     allDay: ev.allDay,
