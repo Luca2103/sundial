@@ -61,8 +61,13 @@ Or build from source (requires the [Pebble SDK](https://developer.repebble.com))
 
 ```sh
 pebble build
+tools/mark-manifest-v2.py build/sundial.pbw
 pebble install --emulator emery      # or gabbro
 ```
+
+The second step adds `"manifestVersion": 2` and `usesPermissions` to the pbw's `appinfo.json`.
+Without it the Pebble app treats Sundial as a legacy app and denies the phone-calendar plugin.
+The official `pack-plugin-pbw.py` from `coredevices/pebble-apps` does the same.
 
 ## Setup — adding your calendars
 
@@ -78,6 +83,26 @@ first time the watch requests data. Once granted, upcoming events appear automat
 > so month-view dots will only appear for the coming week. Day-detail events are fully accurate
 > for any event within that window. The plugin provides title, times, location and calendar
 > name but no description, so event cards show no notes in this mode (ICS links do).
+
+#### Phone-calendar limits: where to check if they change
+
+These limits come from the Pebble app's built-in calendar plugin, not from Sundial. Last checked
+on 2026-10-31 against `coredevices/mobileapp` `master` (last change to the plugin: `bd238f0`,
+2026-10-08):
+
+| Limit | Where it is set |
+|-------|-----------------|
+| Max 10 events | `MAX_EVENTS = 10` in [`CalendarPlugin.kt`](https://github.com/coredevices/mobileapp/blob/master/libpebble3/src/commonMain/kotlin/io/rebble/libpebblecommon/plugin/CalendarPlugin.kt) |
+| 7-day window | `WINDOW = 7.days` in the same file |
+| No description | `sources` → `properties` in the same file only declares `name`, `location`, `starts_at`, `ends_at`, `all_day`, `calendar` |
+
+The phone-side event model ([`CalendarEvent.kt`](https://github.com/coredevices/mobileapp/blob/master/libpebble3/src/commonMain/kotlin/io/rebble/libpebblecommon/calendar/CalendarEvent.kt))
+already has a `description` field; the plugin just doesn't expose it. To see whether anything
+has changed, look at the
+[plugin's commit history](https://github.com/coredevices/mobileapp/commits/master/libpebble3/src/commonMain/kotlin/io/rebble/libpebblecommon/plugin/CalendarPlugin.kt)
+and the [plugin guide](https://developer.repebble.com/guides/plugins/preview). If a description
+property is added, add its name to `properties` in `startPhoneCalSub()` (`src/pkjs/index.js`) and
+map it in `instanceToEvent()`.
 > Requires **Pebble app v1.16 or later** with the **Plugins preview** feature enabled
 > (Settings → Plugins → Plugins / permissions preview).
 
@@ -141,6 +166,33 @@ src/pkjs/gcal.js          Google share-link → ICS URL normalisation
 src/pkjs/config.js        settings page (source picker, week start, accent)
 pkjs-test/                node unit tests (run: node pkjs-test/test-ics.js)
 ```
+
+## Roadmap
+
+### Tasks from tasks.org: planned, blocked upstream
+
+Goal: show [tasks.org](https://tasks.org) tasks that have a due date on their due day, next to
+calendar events.
+
+This isn't possible yet through the Pebble plugin API. Last checked on 2026-10-31:
+
+| What exists | Why it isn't enough |
+|-------------|---------------------|
+| [`tasks-org` plugin](https://github.com/coredevices/pebble-apps/tree/main/tasks-org) | Its only source is `reminders/list`, which returns task-list names, not tasks. Its only action is `create_reminder`. |
+| Host bridge `Pebble.tasksOrg` | Offers only `status`, `listLists`, `createReminder`, `requestAccess`, so it can't read tasks. Neither the bridge nor the `TasksOrg` permission is in the public [`coredevices/mobileapp`](https://github.com/coredevices/mobileapp) `master` yet. |
+| [`todoist`](https://github.com/coredevices/pebble-apps/tree/main/todoist), [`google-tasks-keep`](https://github.com/coredevices/pebble-apps/tree/main/google-tasks-keep) plugins | Also write-only: `reminders/list` plus `create_reminder`. |
+
+What to watch:
+- `plugin.sources` in the [tasks-org `package.json`](https://github.com/coredevices/pebble-apps/blob/main/tasks-org/package.json)
+  for a source that returns individual tasks (for example `reminders/task` with a due date).
+- `TasksOrg` in [`PluginPermissions.kt`](https://github.com/coredevices/mobileapp/blob/master/libpebble3/src/commonMain/kotlin/io/rebble/libpebblecommon/plugin/PluginPermissions.kt).
+
+Once that source exists, subscribe to it the same way `startPhoneCalSub()` does
+(`src/pkjs/index.js`) and map its instances the way `instanceToEvent()` does.
+
+Possible workaround that needs no plugin: if tasks.org syncs to a CalDAV server (Nextcloud,
+Radicale, …), add the task list's `.ics` export as an ICS link and extend `src/pkjs/ics.js` to
+parse `VTODO` (`SUMMARY`, `DUE`, `STATUS`) as well as `VEVENT`.
 
 ## Credits
 

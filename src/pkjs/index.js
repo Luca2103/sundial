@@ -210,8 +210,16 @@ function startPhoneCalSub(onFirst) {
           (err && err.message ? " — " + err.message : "")
       );
       // PERMISSION_DENIED: the subscription stays alive and will succeed once
-      // the user grants Calendar access in the Pebble app.
-      if (code !== "PERMISSION_DENIED") sendError("Calendar: " + code);
+      // the user grants Calendar access in the Pebble app. Still surface it,
+      // so a missing permission (or a legacy, non-manifest-v2 pbw) is visible.
+      if (code === "PERMISSION_DENIED") {
+        sendError(
+          "Calendar: permesso negato" +
+            (err && err.message ? " — " + err.message : "")
+        );
+      } else {
+        sendError("Calendar: " + code);
+      }
       if (cachedEvents === null) cachedEvents = [];
       notifyFirst(code);
     },
