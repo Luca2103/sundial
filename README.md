@@ -93,7 +93,7 @@ on 2026-11-12 against `coredevices/mobileapp` `master` (last change to the plugi
 | Limit | Where it is set | Upstream issue |
 |-------|-----------------|----------------|
 | Max 10 events | `MAX_EVENTS = 10` in [`CalendarPlugin.kt`](https://github.com/coredevices/mobileapp/blob/master/libpebble3/src/commonMain/kotlin/io/rebble/libpebblecommon/plugin/CalendarPlugin.kt) | [#503](https://github.com/coredevices/mobileapp/issues/503) |
-| 7-day window | `WINDOW = 7.days` in the same file | — |
+| 7-day window | `WINDOW = 7.days` in the same file | [#503](https://github.com/coredevices/mobileapp/issues/503) |
 | No description | `sources` → `properties` in the same file only declares `name`, `location`, `starts_at`, `ends_at`, `all_day`, `calendar` | [#502](https://github.com/coredevices/mobileapp/issues/502) |
 
 The phone-side event model ([`CalendarEvent.kt`](https://github.com/coredevices/mobileapp/blob/master/libpebble3/src/commonMain/kotlin/io/rebble/libpebblecommon/calendar/CalendarEvent.kt))
