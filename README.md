@@ -87,18 +87,19 @@ first time the watch requests data. Once granted, upcoming events appear automat
 #### Phone-calendar limits: where to check if they change
 
 These limits come from the Pebble app's built-in calendar plugin, not from Sundial. Last checked
-on 2026-10-31 against `coredevices/mobileapp` `master` (last change to the plugin: `bd238f0`,
+on 2026-11-12 against `coredevices/mobileapp` `master` (last change to the plugin: `bd238f0`,
 2026-10-08):
 
-| Limit | Where it is set |
-|-------|-----------------|
-| Max 10 events | `MAX_EVENTS = 10` in [`CalendarPlugin.kt`](https://github.com/coredevices/mobileapp/blob/master/libpebble3/src/commonMain/kotlin/io/rebble/libpebblecommon/plugin/CalendarPlugin.kt) |
-| 7-day window | `WINDOW = 7.days` in the same file |
-| No description | `sources` → `properties` in the same file only declares `name`, `location`, `starts_at`, `ends_at`, `all_day`, `calendar` |
+| Limit | Where it is set | Upstream issue |
+|-------|-----------------|----------------|
+| Max 10 events | `MAX_EVENTS = 10` in [`CalendarPlugin.kt`](https://github.com/coredevices/mobileapp/blob/master/libpebble3/src/commonMain/kotlin/io/rebble/libpebblecommon/plugin/CalendarPlugin.kt) | [#503](https://github.com/coredevices/mobileapp/issues/503) |
+| 7-day window | `WINDOW = 7.days` in the same file | — |
+| No description | `sources` → `properties` in the same file only declares `name`, `location`, `starts_at`, `ends_at`, `all_day`, `calendar` | [#502](https://github.com/coredevices/mobileapp/issues/502) |
 
 The phone-side event model ([`CalendarEvent.kt`](https://github.com/coredevices/mobileapp/blob/master/libpebble3/src/commonMain/kotlin/io/rebble/libpebblecommon/calendar/CalendarEvent.kt))
-already has a `description` field; the plugin just doesn't expose it. To see whether anything
-has changed, look at the
+already has a `description` field; the plugin just doesn't expose it, while timeline pins for the
+same events do show it. To see whether anything has changed, follow the upstream issues above or
+look at the
 [plugin's commit history](https://github.com/coredevices/mobileapp/commits/master/libpebble3/src/commonMain/kotlin/io/rebble/libpebblecommon/plugin/CalendarPlugin.kt)
 and the [plugin guide](https://developer.repebble.com/guides/plugins/preview). If a description
 property is added, add its name to `properties` in `startPhoneCalSub()` (`src/pkjs/index.js`) and
