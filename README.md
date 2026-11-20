@@ -95,9 +95,9 @@ on 2026-11-20 against `coredevices/mobileapp` `master` (last changes to the plug
 |-------|--------|-----------------|----------------|
 | Max events | Fixed in 2.0.0: subscribers pass `limit` (1–200, default 10); Sundial asks for 200 | `MAX_EVENTS = 10` in [`CalendarPlugin.kt`](https://github.com/coredevices/mobileapp/blob/master/libpebble3/src/commonMain/kotlin/io/rebble/libpebblecommon/plugin/CalendarPlugin.kt), `MAX_LIMIT = 200` in [`Plugin.kt`](https://github.com/coredevices/mobileapp/blob/master/libpebble3/src/commonMain/kotlin/io/rebble/libpebblecommon/plugin/Plugin.kt) | [#503](https://github.com/coredevices/mobileapp/issues/503) (closed) |
 | Description | Fixed in 2.0.0: `description` property, HTML stripped, cut to 300 characters | `PROPERTY_DESCRIPTION` in `CalendarPlugin.kt` | [#502](https://github.com/coredevices/mobileapp/issues/502) (closed) |
-| 7-day window | Still in place | `WINDOW = 7.days` in `CalendarPlugin.kt` | — |
+| 7-day window | Still in place; ended events (even today's) are dropped too | `WINDOW = 7.days` and `upcoming()` in `CalendarPlugin.kt` | [#520](https://github.com/coredevices/mobileapp/issues/520) (open) |
 
-To see whether the window changes, look at the
+To see whether the window changes, follow [#520](https://github.com/coredevices/mobileapp/issues/520) or look at the
 [plugin's commit history](https://github.com/coredevices/mobileapp/commits/master/libpebble3/src/commonMain/kotlin/io/rebble/libpebblecommon/plugin/CalendarPlugin.kt)
 and the [plugin guide](https://developer.repebble.com/guides/plugins/preview). The request is
 built in `startPhoneCalSub()` (`src/pkjs/index.js`) and instances are mapped in
