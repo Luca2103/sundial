@@ -79,8 +79,9 @@ Open the **Pebble mobile app → My Apps → Sundial → ⚙︎ Settings**, choo
 Select **Phone calendar** and tap **Save**. The Pebble app will ask for calendar access the
 first time the watch requests data. Once granted, upcoming events appear automatically.
 
-> **Note:** The Pebble app's calendar plugin only looks **7 days ahead**, so month-view dots
-> only appear for the coming week; the agenda is fully accurate within that window. With
+> **Note:** The Pebble app's calendar plugin only returns events from **now to 7 days ahead**,
+> so month-view dots only appear for the coming week, and events that have already ended
+> (including earlier ones today) drop out of the agenda. With
 > **Pebble app 2.0.0 or later** Sundial gets every event in that window (up to 200) and the
 > event description, so cards show notes like in ICS mode. Older app versions return at most
 > the next 10 events and no description.
