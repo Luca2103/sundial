@@ -11,7 +11,7 @@ Shows the month with a dot on every day that has events; tap a day for an agenda
 scroll through, and tap an event for its details (time, location, description) on a card
 modelled on the system timeline's. Two calendar sources:
 
-- **Phone calendar** — reads events directly from your device's calendar app via the
+- **Phone calendar** — reads the coming week's events directly from your device's calendar app via the
   [Pebble plugin API](https://github.com/coredevices/mobileapp/blob/master/test-apps/plugins.md).
   No links to configure; just grant calendar access once.
 - **iCloud / ICS links** — the original mode; paste a `webcal://` or ICS URL.
@@ -50,11 +50,11 @@ card — with white or black text picked automatically for contrast.
 
 ## Install
 
-Sideload the prebuilt **[`calendar.pbw`](calendar.pbw)** with the Pebble app or the developer
+Sideload the prebuilt **[`sundial.pbw`](sundial.pbw)** with the Pebble app or the developer
 tools:
 
 ```sh
-pebble install --phone <your-phone-ip> calendar.pbw
+pebble install --phone <your-phone-ip> sundial.pbw
 ```
 
 Or build from source (requires the [Pebble SDK](https://developer.repebble.com)):
@@ -79,31 +79,30 @@ Open the **Pebble mobile app → My Apps → Sundial → ⚙︎ Settings**, choo
 Select **Phone calendar** and tap **Save**. The Pebble app will ask for calendar access the
 first time the watch requests data. Once granted, upcoming events appear automatically.
 
-> **Note:** The Pebble plugin API returns at most the next 10 events within a 7-day window,
-> so month-view dots will only appear for the coming week. Day-detail events are fully accurate
-> for any event within that window. The plugin provides title, times, location and calendar
-> name but no description, so event cards show no notes in this mode (ICS links do).
+> **Note:** The Pebble app's calendar plugin only looks **7 days ahead**, so month-view dots
+> only appear for the coming week; the agenda is fully accurate within that window. With
+> **Pebble app 2.0.0 or later** Sundial gets every event in that window (up to 200) and the
+> event description, so cards show notes like in ICS mode. Older app versions return at most
+> the next 10 events and no description.
 
 #### Phone-calendar limits: where to check if they change
 
 These limits come from the Pebble app's built-in calendar plugin, not from Sundial. Last checked
-on 2026-11-12 against `coredevices/mobileapp` `master` (last change to the plugin: `bd238f0`,
-2026-10-08):
+on 2026-11-20 against `coredevices/mobileapp` `master` (last changes to the plugin: `dc05da2` and
+`40b48eb`, 2026-11-18, both in release 2.0.0):
 
-| Limit | Where it is set | Upstream issue |
-|-------|-----------------|----------------|
-| Max 10 events | `MAX_EVENTS = 10` in [`CalendarPlugin.kt`](https://github.com/coredevices/mobileapp/blob/master/libpebble3/src/commonMain/kotlin/io/rebble/libpebblecommon/plugin/CalendarPlugin.kt) | [#503](https://github.com/coredevices/mobileapp/issues/503) |
-| 7-day window | `WINDOW = 7.days` in the same file | [#503](https://github.com/coredevices/mobileapp/issues/503) |
-| No description | `sources` → `properties` in the same file only declares `name`, `location`, `starts_at`, `ends_at`, `all_day`, `calendar` | [#502](https://github.com/coredevices/mobileapp/issues/502) |
+| Limit | Status | Where it is set | Upstream issue |
+|-------|--------|-----------------|----------------|
+| Max events | Fixed in 2.0.0: subscribers pass `limit` (1–200, default 10); Sundial asks for 200 | `MAX_EVENTS = 10` in [`CalendarPlugin.kt`](https://github.com/coredevices/mobileapp/blob/master/libpebble3/src/commonMain/kotlin/io/rebble/libpebblecommon/plugin/CalendarPlugin.kt), `MAX_LIMIT = 200` in [`Plugin.kt`](https://github.com/coredevices/mobileapp/blob/master/libpebble3/src/commonMain/kotlin/io/rebble/libpebblecommon/plugin/Plugin.kt) | [#503](https://github.com/coredevices/mobileapp/issues/503) (closed) |
+| Description | Fixed in 2.0.0: `description` property, HTML stripped, cut to 300 characters | `PROPERTY_DESCRIPTION` in `CalendarPlugin.kt` | [#502](https://github.com/coredevices/mobileapp/issues/502) (closed) |
+| 7-day window | Still in place | `WINDOW = 7.days` in `CalendarPlugin.kt` | — |
 
-The phone-side event model ([`CalendarEvent.kt`](https://github.com/coredevices/mobileapp/blob/master/libpebble3/src/commonMain/kotlin/io/rebble/libpebblecommon/calendar/CalendarEvent.kt))
-already has a `description` field; the plugin just doesn't expose it, while timeline pins for the
-same events do show it. To see whether anything has changed, follow the upstream issues above or
-look at the
+To see whether the window changes, look at the
 [plugin's commit history](https://github.com/coredevices/mobileapp/commits/master/libpebble3/src/commonMain/kotlin/io/rebble/libpebblecommon/plugin/CalendarPlugin.kt)
-and the [plugin guide](https://developer.repebble.com/guides/plugins/preview). If a description
-property is added, add its name to `properties` in `startPhoneCalSub()` (`src/pkjs/index.js`) and
-map it in `instanceToEvent()`.
+and the [plugin guide](https://developer.repebble.com/guides/plugins/preview). The request is
+built in `startPhoneCalSub()` (`src/pkjs/index.js`) and instances are mapped in
+`instanceToEvent()`.
+
 > Requires **Pebble app v1.16 or later** with the **Plugins preview** feature enabled
 > (Settings → Plugins → Plugins / permissions preview).
 
@@ -175,17 +174,23 @@ pkjs-test/                node unit tests (run: node pkjs-test/test-ics.js)
 Goal: show [tasks.org](https://tasks.org) tasks that have a due date on their due day, next to
 calendar events.
 
-This isn't possible yet through the Pebble plugin API. Last checked on 2026-10-31:
+This isn't possible yet through the Pebble plugin API. Last checked on 2026-11-20:
 
 | What exists | Why it isn't enough |
 |-------------|---------------------|
-| [`tasks-org` plugin](https://github.com/coredevices/pebble-apps/tree/main/tasks-org) | Its only source is `reminders/list`, which returns task-list names, not tasks. Its only action is `create_reminder`. |
+| [`tasks-org` plugin](https://github.com/coredevices/pebble-apps/tree/main/tasks-org) | Its only source is `reminders/list`, which returns task-list names, not tasks. Its only action is `create_reminder`. It also needs the `TasksOrg` permission, which the public Pebble app doesn't define yet, so the plugin doesn't show up in the app's store. |
 | Host bridge `Pebble.tasksOrg` | Offers only `status`, `listLists`, `createReminder`, `requestAccess`, so it can't read tasks. Neither the bridge nor the `TasksOrg` permission is in the public [`coredevices/mobileapp`](https://github.com/coredevices/mobileapp) `master` yet. |
 | [`todoist`](https://github.com/coredevices/pebble-apps/tree/main/todoist), [`google-tasks-keep`](https://github.com/coredevices/pebble-apps/tree/main/google-tasks-keep) plugins | Also write-only: `reminders/list` plus `create_reminder`. |
 
+Upstream issue: [mobileapp#516](https://github.com/coredevices/mobileapp/issues/516) (open)
+proposes a shared `reminders/item` source (one instance per task, with `name`, `done`, `due`,
+`notes`, `list`), a `list` argument when subscribing, and `complete_reminder` /
+`delete_reminder` actions. That is exactly what Sundial needs.
+
 What to watch:
+- [mobileapp#516](https://github.com/coredevices/mobileapp/issues/516).
 - `plugin.sources` in the [tasks-org `package.json`](https://github.com/coredevices/pebble-apps/blob/main/tasks-org/package.json)
-  for a source that returns individual tasks (for example `reminders/task` with a due date).
+  for a source that returns individual tasks (for example `reminders/item` with a due date).
 - `TasksOrg` in [`PluginPermissions.kt`](https://github.com/coredevices/mobileapp/blob/master/libpebble3/src/commonMain/kotlin/io/rebble/libpebblecommon/plugin/PluginPermissions.kt).
 
 Once that source exists, subscribe to it the same way `startPhoneCalSub()` does

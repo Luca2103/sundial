@@ -103,10 +103,13 @@ var ADJ_HORIZON_DAYS = 365; // how far to look for the next/prev non-empty day
 
 // --- phone calendar (Pebble built-in calendar/event plugin) ----------------
 //
-// The built-in plugin returns at most 10 upcoming events within a 7-day
-// window. The month grid will therefore only show dots for the current week;
-// the day-detail view is accurate for any event within that window.
+// The built-in plugin only looks 7 days ahead, so the month grid shows dots
+// for the coming week only; the agenda is accurate within that window.
+// Pebble app 2.0.0+ honours a `limit` (default 10, max 200) and serves the
+// event description; older versions ignore both and keep returning at most
+// 10 events without descriptions.
 
+var PHONE_CAL_LIMIT = 200; // Plugin.MAX_LIMIT in the Pebble app
 var phoneCalSub = null; // active Pebble.subscribeToSource handle, or null
 
 // Returns true when phone-calendar mode is enabled in settings.
@@ -154,7 +157,7 @@ function instanceToEvent(inst) {
     end: end,
     allDay: allDay,
     location: text(p.location),
-    description: "",
+    description: text(p.description),
     calendar: text(p.calendar),
     rrule: null,
     exdates: [],
@@ -184,8 +187,20 @@ function startPhoneCalSub(onFirst) {
     category: "calendar",
     item: "event",
     // Everything the built-in plugin serves (CalendarPlugin.kt in the Pebble
-    // app). It has no description/notes property, so those stay empty here.
-    properties: ["name", "starts_at", "ends_at", "all_day", "location", "calendar"],
+    // app). `description` exists since Pebble app 2.0.0; older versions drop
+    // it from the request and events simply have no notes.
+    properties: [
+      "name",
+      "starts_at",
+      "ends_at",
+      "all_day",
+      "location",
+      "description",
+      "calendar",
+    ],
+    // Without a limit the plugin returns only the next 10 events. Ask for the
+    // host maximum so the whole 7-day window arrives (ignored before 2.0.0).
+    limit: PHONE_CAL_LIMIT,
     onData: function (envelope) {
       var evs = (envelope.instances || []).reduce(function (acc, inst) {
         var ev = instanceToEvent(inst);
